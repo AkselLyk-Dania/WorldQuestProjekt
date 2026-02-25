@@ -13,5 +13,8 @@ namespace WorldQuestProjekt
         public static string pClass = "no class";
         public static string pRace;
         public static string pWeapon;
+        public static string pItem;
+
+        public static int selected;
     }
 }

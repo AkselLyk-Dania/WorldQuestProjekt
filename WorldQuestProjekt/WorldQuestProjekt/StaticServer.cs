@@ -11,5 +11,6 @@ namespace WorldQuestProjekt
         public static string database;
         public static string user;
         public static string password;
+        public static string cs;
     }
 }
