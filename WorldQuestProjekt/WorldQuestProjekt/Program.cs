@@ -54,15 +54,19 @@ namespace WorldQuestProjekt
                     //...til int32
                     int count = (Int32)command.ExecuteScalar();
 
-                    command = new SqlCommand("SELECT name, level, race, class, weapon, item FROM player", connection);
-                    SqlDataReader reader = command.ExecuteReader();
-                    reader.Read();
-
-                    for(int i = 0; i < count; i++)
+                    if (count == 0) Console.WriteLine("Ingen players fundet");
+                    else
                     {
-                        Console.WriteLine($"{i+1}. Name: {reader.GetString(reader.GetOrdinal("name"))} Level: {Convert.ToInt32(reader["level"])} Race: {reader.GetString(reader.GetOrdinal("race"))}" +
-                            $" Class: {reader.GetString(reader.GetOrdinal("class"))} Weapon: {reader.GetString(reader.GetOrdinal("weapon"))} Item: {reader.GetString(reader.GetOrdinal("item"))}");
+                        command = new SqlCommand("SELECT name, level, race, class, weapon, item FROM player", connection);
+                        SqlDataReader reader = command.ExecuteReader();
                         reader.Read();
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            Console.WriteLine($"{i + 1}. Name: {reader.GetString(reader.GetOrdinal("name"))} Level: {Convert.ToInt32(reader["level"])} Race: {reader.GetString(reader.GetOrdinal("race"))}" +
+                                $" Class: {reader.GetString(reader.GetOrdinal("class"))} Weapon: {reader.GetString(reader.GetOrdinal("weapon"))} Item: {reader.GetString(reader.GetOrdinal("item"))}");
+                            reader.Read();
+                        }
                     }
 
                     Console.WriteLine("Press any key to continue...");
