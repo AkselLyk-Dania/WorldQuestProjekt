@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Data.Common;
 using System.Data.SqlClient;
@@ -16,6 +17,7 @@ namespace WorldQuestProjekt
     {
         static void Main(string[] args)
         {
+            //Få server information ved hjælp af en statisk klasse
             SServer.database = "worldquest";
             SServer.user = "sql_user";
             SServer.password = "1234";
@@ -33,38 +35,46 @@ namespace WorldQuestProjekt
             Console.WriteLine("+-----------------------------------+");
             Console.WriteLine($"Database: {SServer.database} | Bruger: {SServer.user}");
             Console.WriteLine();
-            Console.WriteLine("Du har følgende muligheder;");
+            Console.WriteLine("Du har følgende muligheder:");
             Console.WriteLine("1. Ny Player");
             Console.WriteLine("2. List alle players");
             Console.WriteLine("3. Slet alle players");
 
+            //Hvad der skrives som character
             char key = Console.ReadKey().KeyChar;
             Console.WriteLine("");
 
-            if (key == '1') PlayerNameLevel();
+            //Lav en ny player
+            if (key == '1') PlayerName();
+
+            //List alle players der er lavet i tabellen med player
             else if (key == '2')
             {
+                //Opret forbindelse til databasen
                 using (SqlConnection connection = new SqlConnection(SServer.cs))
                 {
                     connection.Open();
 
-                    //SQL command som tæller all classes fra tabellen...
+                    //En command som tæller all classes fra tabellen f.eks. player hvis der er nogen...
                     SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM player", connection);
 
                     //...til int32
                     int count = (Int32)command.ExecuteScalar();
 
+                    //Den vil svare dette hvis der ikke var fundet nogen række i tabellen
                     if (count == 0) Console.WriteLine("Ingen players fundet");
                     else
                     {
+                        //Command der finder nødvendige informationer
                         command = new SqlCommand("SELECT name, level, race, class, weapon, item FROM player", connection);
                         SqlDataReader reader = command.ExecuteReader();
                         reader.Read();
 
+                        //En lykke, der skrive informationer ned mens den tæller antal rækker
                         for (int i = 0; i < count; i++)
                         {
-                            Console.WriteLine($"{i + 1}. Name: {reader.GetString(reader.GetOrdinal("name"))} Level: {Convert.ToInt32(reader["level"])} Race: {reader.GetString(reader.GetOrdinal("race"))}" +
-                                $" Class: {reader.GetString(reader.GetOrdinal("class"))} Weapon: {reader.GetString(reader.GetOrdinal("weapon"))} Item: {reader.GetString(reader.GetOrdinal("item"))}");
+                            Console.WriteLine($"{i + 1}. Name: {reader.GetString(reader.GetOrdinal("name"))} | Level: {Convert.ToInt32(reader["level"])} | Race: {reader.GetString(reader.GetOrdinal("race"))}" +
+                                $" | Class: {reader.GetString(reader.GetOrdinal("class"))} | Weapon: {reader.GetString(reader.GetOrdinal("weapon"))} | Item: {reader.GetString(reader.GetOrdinal("item"))}");
                             reader.Read();
                         }
                     }
@@ -82,9 +92,11 @@ namespace WorldQuestProjekt
 
                     Console.WriteLine("Er du sikke på at du vil slette alle rækker med players? (Y/N)");
 
+                    //(Y/y eller N/n)
                     key = Console.ReadKey().KeyChar;
                     if (key == 'Y' || key == 'y')
                     {
+                        //Sletter alle rækker fra tabellen
                         SqlCommand command = new SqlCommand("DELETE FROM PLAYER", connection);
                         command.ExecuteNonQuery();
 
@@ -102,7 +114,7 @@ namespace WorldQuestProjekt
 
         }
 
-        static void PlayerNameLevel()
+        static void PlayerName()
         {
             Console.Clear();
 
@@ -113,20 +125,72 @@ namespace WorldQuestProjekt
             Console.WriteLine();
             Console.WriteLine("Venligst skriv navn for at oprette en player");
 
-            SPlayer.pName = Console.ReadLine();
+            using (SqlConnection connection = new SqlConnection(SServer.cs))
+            {
+                connection.Open();
 
+                //SPlayer er en ny statisk klasse der gemmer information indtil de bruges til at lave en ny række
+                SPlayer.pName = Console.ReadLine();
+
+                SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM player", connection);
+                int count = (Int32)command.ExecuteScalar();
+
+                //Name er UNIQUE, så der skal helst ikke være identiske navne på spil (koden vil også fejle hvis man prøver at oprette en ny player med samme navn)
+                bool found = false;
+
+                if (count > 0)
+                {
+                    command = new SqlCommand("SELECT * FROM player", connection);
+                    SqlDataReader reader = command.ExecuteReader();
+                    reader.Read();
+
+                    //En lykke, der identificer om det navn man har skrevet sammenlignes med nogle af de navne fra tabellen
+                    //Der bruges en bool til bekræftelse
+                    for(int i = 0; i < count; i++)
+                    {
+                        if(SPlayer.pName == reader.GetString(reader.GetOrdinal("name")))
+                        {
+                            found = true;
+                            break;
+                        }
+                        reader.Read();
+                    }
+                }
+                else PlayerLevel();
+
+                if(found)
+                {
+                    Console.WriteLine($"Der eksisterer allerede et navn i players med {SPlayer.pName}");
+                    Console.WriteLine("Press any key to continue...");
+                    Console.ReadKey();
+                    PlayerName();
+                }
+                else PlayerLevel();
+            }
+        }
+
+        static void PlayerLevel()
+        {
+            Console.Clear();
+
+            Console.WriteLine("+-----------------------------------+");
+            Console.WriteLine("|     Velkommen til World Quest     |");
+            Console.WriteLine("+-----------------------------------+");
+            Console.WriteLine($"Database: {SServer.database} | Bruger: {SServer.user}");
+            Console.WriteLine();
             Console.WriteLine("Venligst skriv player level");
 
-            try 
-            { 
-                SPlayer.pLevel = Int32.Parse(Console.ReadLine()); 
+            //Det man skriver ned skal helst være et tal og ikke andre ting
+            try
+            {
+                SPlayer.pLevel = Int32.Parse(Console.ReadLine()); //prøver at convertere en string til en int
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
                 Console.WriteLine("Press any key to continue...");
                 Console.ReadKey();
-                PlayerNameLevel();
+                PlayerLevel();
             }
 
             PlayerRace();
@@ -148,22 +212,22 @@ namespace WorldQuestProjekt
             {
                 connection.Open();
 
-                //SQL command som tæller all classes fra tabellen...
                 SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM race", connection);
-
-                //...til int32
                 int count = (Int32)command.ExecuteScalar();
 
-                //Ny command som tæller strings
+                //Ny command som tæller strings (from race)
                 command = new SqlCommand("SELECT * FROM race", connection);
                 SqlDataReader reader = command.ExecuteReader();
 
-                //List alle classes
+                //List alle races fra tabellen race
                 for (int i = 0; i < count; i++)
                 {
                     reader.Read();
                     Console.WriteLine(i + 1 + ". " + (string)reader[1]);
                 }
+
+                //De er nu listed med numre, hvor du skal skrive et nummer for a vælge
+                Console.WriteLine("Venligst indtast nummer for at vælge...");
 
                 try
                 {
@@ -177,11 +241,14 @@ namespace WorldQuestProjekt
                     PlayerRace();
                 }
 
+                //Hvis et nummer der stammer fra listen er skrevet ned
                 if (SPlayer.selected <= count && SPlayer.selected > 0)
                 {
                     reader.Close();
                     reader = command.ExecuteReader();
                     int x = 0;
+
+                    //Den gemmer racen i den statiske player klasse
                     while (x < count)
                     {
                         if (x == SPlayer.selected) SPlayer.pRace = (string)reader[1];
@@ -211,22 +278,19 @@ namespace WorldQuestProjekt
             {
                 connection.Open();
 
-                //SQL command som tæller all classes fra tabellen...
                 SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM class", connection);
-
-                //...til int32
                 int count = (Int32)command.ExecuteScalar();
 
-                //Ny command som tæller strings
                 command = new SqlCommand("SELECT * FROM class", connection);
                 SqlDataReader reader = command.ExecuteReader();
 
-                //List alle classes
                 for (int i = 0; i < count; i++)
                 {
                     reader.Read();
                     Console.WriteLine(i + 1 + ". " + (string)reader[1]);
                 }
+
+                Console.WriteLine("Venligst indtast nummer for at vælge...");
 
                 try
                 {
@@ -273,22 +337,20 @@ namespace WorldQuestProjekt
             {
                 connection.Open();
 
-                //SQL command som tæller all classes fra tabellen...
                 SqlCommand command = new SqlCommand($"SELECT COUNT(*) FROM weapon WHERE typeclass IN ('{SPlayer.pClass}')", connection);
-
-                //...til int32
                 int count = (Int32)command.ExecuteScalar();
 
-                //Ny command som tæller strings
+                //Nu skal den vælge våben (or items) ud fra den klasse man har valgt, siden de kun hører til den rette klasse
                 command = new SqlCommand($"SELECT * FROM weapon WHERE typeclass IN ('{SPlayer.pClass}')", connection);
                 SqlDataReader reader = command.ExecuteReader();
 
-                //List alle classes
                 for (int i = 0; i < count; i++)
                 {
                     reader.Read();
                     Console.WriteLine(i + 1 + ". " + (string)reader[1]);
                 }
+
+                Console.WriteLine("Venligst indtast nummer for at vælge...");
 
                 try
                 {
@@ -335,22 +397,19 @@ namespace WorldQuestProjekt
             {
                 connection.Open();
 
-                //SQL command som tæller all classes fra tabellen...
                 SqlCommand command = new SqlCommand($"SELECT COUNT(*) FROM item WHERE typeclass IN ('{SPlayer.pClass}')", connection);
-
-                //...til int32
                 int count = (Int32)command.ExecuteScalar();
 
-                //Ny command som tæller strings
                 command = new SqlCommand($"SELECT * FROM item WHERE typeclass IN ('{SPlayer.pClass}')", connection);
                 SqlDataReader reader = command.ExecuteReader();
 
-                //List alle classes
                 for (int i = 0; i < count; i++)
                 {
                     reader.Read();
                     Console.WriteLine(i + 1 + ". " + (string)reader[1]);
                 }
+
+                Console.WriteLine("Venligst indtast nummer for at vælge...");
 
                 try
                 {
@@ -403,8 +462,10 @@ namespace WorldQuestProjekt
             {
                 connection.Open();
 
+                //Test
                 int rows = 0;
 
+                //Alle data samlet i den statiske player klasse laves til en række i player tabellen
                 char key = Console.ReadKey().KeyChar;
                 if (key == 'Y' || key == 'y')
                 {
@@ -412,6 +473,8 @@ namespace WorldQuestProjekt
                     string query = $"INSERT INTO player (name, weapon, class, item, race, level) VALUES ('{SPlayer.pName}', '{SPlayer.pWeapon}', '{SPlayer.pClass}', '{SPlayer.pItem}', '{SPlayer.pRace}', '{SPlayer.pLevel}')";
 
                     SqlCommand command = new SqlCommand(query, connection);
+
+                    //Skulle gerne kun være 1
                     rows = command.ExecuteNonQuery();
 
                 }
@@ -420,10 +483,10 @@ namespace WorldQuestProjekt
 
                 //Test
                 TestTable(rows);
-                //Menu();
             }
         }
 
+        //En funktion, der viser antal rækker og "affected rows" altså hvilke rækker der er ændret
         static void TestTable(int rows)
         {
             using (SqlConnection connection = new SqlConnection(SServer.cs))
