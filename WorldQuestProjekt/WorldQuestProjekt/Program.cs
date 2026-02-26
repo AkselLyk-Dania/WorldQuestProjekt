@@ -55,7 +55,7 @@ namespace WorldQuestProjekt
                 {
                     connection.Open();
 
-                    //En command som tæller all classes fra tabellen f.eks. player hvis der er nogen...
+                    //(DML) En command som tæller all classes fra tabellen f.eks. player hvis der er nogen...
                     SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM player", connection);
 
                     //...til int32
@@ -65,7 +65,7 @@ namespace WorldQuestProjekt
                     if (count == 0) Console.WriteLine("Ingen players fundet");
                     else
                     {
-                        //Command der finder nødvendige informationer
+                        //(DML) Command der finder nødvendige informationer
                         command = new SqlCommand("SELECT name, level, race, class, weapon, item FROM player", connection);
                         SqlDataReader reader = command.ExecuteReader();
                         reader.Read();
@@ -96,7 +96,7 @@ namespace WorldQuestProjekt
                     key = Console.ReadKey().KeyChar;
                     if (key == 'Y' || key == 'y')
                     {
-                        //Sletter alle rækker fra tabellen
+                        //(DML) Sletter alle rækker fra tabellen
                         SqlCommand command = new SqlCommand("DELETE FROM PLAYER", connection);
                         command.ExecuteNonQuery();
 
@@ -340,7 +340,7 @@ namespace WorldQuestProjekt
                 SqlCommand command = new SqlCommand($"SELECT COUNT(*) FROM weapon WHERE typeclass IN ('{SPlayer.pClass}')", connection);
                 int count = (Int32)command.ExecuteScalar();
 
-                //Nu skal den vælge våben (or items) ud fra den klasse man har valgt, siden de kun hører til den rette klasse
+                //(DML) Nu skal den vælge våben (or items) ud fra den klasse man har valgt, siden de kun hører til den rette klasse
                 command = new SqlCommand($"SELECT * FROM weapon WHERE typeclass IN ('{SPlayer.pClass}')", connection);
                 SqlDataReader reader = command.ExecuteReader();
 
@@ -465,16 +465,15 @@ namespace WorldQuestProjekt
                 //Test
                 int rows = 0;
 
-                //Alle data samlet i den statiske player klasse laves til en række i player tabellen
                 char key = Console.ReadKey().KeyChar;
                 if (key == 'Y' || key == 'y')
                 {
-
+                    //(DML) Alle data samlet i den statiske player klasse laves til en række i player tabellen
                     string query = $"INSERT INTO player (name, weapon, class, item, race, level) VALUES ('{SPlayer.pName}', '{SPlayer.pWeapon}', '{SPlayer.pClass}', '{SPlayer.pItem}', '{SPlayer.pRace}', '{SPlayer.pLevel}')";
 
                     SqlCommand command = new SqlCommand(query, connection);
 
-                    //Skulle gerne kun være 1
+                    //rows skulle gerne kun være 1
                     rows = command.ExecuteNonQuery();
 
                 }
